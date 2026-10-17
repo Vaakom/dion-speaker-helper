@@ -1,0 +1,25 @@
+<!doctype html>
+<html lang="ru"><head><meta charset="utf-8"><title>Журнал имён DION</title>
+<style>
+body{font:14px system-ui;width:370px;margin:0;padding:18px;background:#18202b;color:#edf3fa}
+h1{font-size:19px;margin:0 0 14px}#status{font-size:17px;font-weight:650}
+[data-tone=success]{color:#83e5ab}[data-tone=error]{color:#ffb1a9}[data-tone=warning]{color:#ffda8a}
+p{line-height:1.5}small{color:#becbd9}label{display:block;margin-top:18px}
+textarea{box-sizing:border-box;width:100%;margin:8px 0;padding:9px;resize:vertical;background:#101720;color:#edf3fa;border:1px solid #718096;border-radius:6px}
+button{padding:9px;margin:4px 0;width:100%;cursor:pointer}button:disabled{cursor:default;opacity:.5}
+details{margin-top:18px}pre{white-space:pre-wrap;overflow-wrap:anywhere;max-height:220px;overflow:auto}
+:focus-visible{outline:3px solid #8bcaff;outline-offset:2px}
+</style></head><body>
+<h1>Журнал имён DION</h1>
+<section aria-live="polite"><div id="status" role="status">Проверяю журнал…</div><p id="detail"></p></section>
+<small id="updated">Событий пока нет</small>
+<label for="path">Файл журнала текущей вкладки</label>
+<textarea id="path" readonly rows="4" spellcheck="false"></textarea>
+<button id="copy" disabled>Копировать путь</button><small id="copy-result" role="status"></small>
+<p><small>Вставьте путь в Проводник или текстовый редактор. Расширение сохраняет имена и индикаторы DION, без записи звука.</small></p>
+<button id="options">Настройки DION</button>
+<details><summary>Диагностика</summary>
+<button id="inspect">Проверить индикаторы</button><button id="probe">Сохранить диагностику интерфейса</button>
+<pre id="diagnostics"></pre></details>
+<script src="status-view.js"></script><script src="popup.js"></script>
+</body></html>

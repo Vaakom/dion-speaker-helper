@@ -1,0 +1,8 @@
+<!doctype html><html lang="ru"><meta charset="utf-8"><title>Настройка DION</title>
+<style>body{font:16px system-ui;max-width:750px;margin:36px auto;padding:20px}input[type=text]{display:block;width:100%;padding:8px;margin:8px 0 20px}button{padding:10px}pre{white-space:pre-wrap}</style>
+<h1>Автожурнал имён DION</h1><p>Для каждой открытой встречи автоматически создаётся отдельный журнал, даже без записи аудио. Привязка к секретарю не требуется. Журналы хранятся в папке runtime/journals продукта.</p><p>Имена только из журнала расширения. Голоса не анализируются. При переключении рамки, нескольких именах или неполных данных перед именем ставится ?. Без имени — «Неизвестный спикер». Скрытые наложения и шум могут остаться незамеченными.</p>
+<form id="form"><label>CSS-селектор плиток участников<input id="tile" type="text" required maxlength="300"></label>
+<label>CSS-селектор имени внутри плитки<input id="name" type="text" required maxlength="300"></label>
+<label>CSS-селектор рамки говорящего<input id="active" type="text" required maxlength="300"></label>
+<label><input id="calibrated" type="checkbox">Селекторы проверены: рамка переключается между именами и исчезает после паузы.</label><p>Подтверждать голос и накапливать реплики не требуется.</p>
+<button>Сохранить профиль</button></form><pre id="result"></pre><script src="options.js"></script></html>
