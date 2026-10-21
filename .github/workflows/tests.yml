@@ -13,5 +13,4 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
-      - run: python -m unittest test_helper test_browser_names test_auto_journals
-      - run: node --test test_content.cjs test_auto_background.cjs test_status.cjs
+      - run: python -X utf8 -B verify.py

@@ -89,6 +89,8 @@ class Journal(LegacyJournal):
             raise ValueError('Invalid browser document identity')
         key=(client,tab,page)
         if msg['type']=='auto_end':
+            from lifecycle import end_lifecycle
+            end_lifecycle(self.config.get('journals', str(Path(__file__).parent/'journals')), msg)
             state=self.streams.pop(key,None)
             if state:
                 meta=json.loads((state/'meta.json').read_text('utf-8'))
@@ -124,7 +126,8 @@ class Journal(LegacyJournal):
             meta={'schema':1,'client':client,'tab':tab,'page_id':page,'meeting_id':meeting,
                   'title':title,'started_at':wall,'boot_epoch':wall-now}
         else:meta=json.loads(meta_path.read_text('utf-8'))
-        meta.update(last_at=wall,last_monotonic=now,title=title)
+        meta.update(last_at=wall,last_monotonic=now,title=title,
+                    lifecycle_version=msg.get('lifecycle_version', 0))
         # Atomic metadata avoids partial reads by the secretary.
         temp=target/'meta.json.tmp'
         temp.write_text(json.dumps(meta,ensure_ascii=False,indent=2),'utf-8');temp.replace(meta_path)
@@ -134,6 +137,8 @@ class Journal(LegacyJournal):
         with (target/'events.jsonl').open('a',encoding='utf-8') as out:
             out.write(json.dumps(sample,ensure_ascii=False)+'\n')
         self.streams[key]=target
+        from lifecycle import active_lifecycle
+        active_lifecycle(directory, msg)
         return {'ok':True,'state':'auto_journaling','tab':tab,'meeting_id':meeting[:12],
                 'title':title,'path':str(target),'speakers':names,'last_at':wall,'observation_state':sample_state}
 

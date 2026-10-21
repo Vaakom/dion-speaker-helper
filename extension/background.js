@@ -44,14 +44,17 @@ chrome.runtime.onMessage.addListener((m,sender,reply)=>{
     (async()=>{
       const s=await chrome.storage.local.get(['profile','autoJournalEnabled']);
       if(s.autoJournalEnabled===false)return;
-      if(!m.meeting){
-        if(port)port.postMessage({type:'auto_end',tab:sender.tab.id,page_id:m.page_id,client:await clientId()});
+      if(m.meeting!==true){
+        if(m.meeting===false&&m.end_reason==='meeting_ended')
+          await endDocument(sender.tab.id,'meeting_ended',m.page_id);
         return;
       }
-      documents.set(sender.tab.id,{page:m.page_id,client:await clientId()});
+      const doc={page:m.page_id,client:await clientId(),meeting:await meetingId(sender.url)};
+      documents.set(sender.tab.id,doc);
+      await chrome.storage.local.set({['journalDoc:'+sender.tab.id]:doc});
       connect().postMessage({
         type:'auto_sample',tab:sender.tab.id,page_id:m.page_id,client:await clientId(),
-        meeting_id:await meetingId(sender.url),title:String(sender.tab.title||'DION').slice(0,160),
+        lifecycle_version:1,meeting_id:doc.meeting,title:String(sender.tab.title||'DION').slice(0,160),
         at:m.at,state:m.state,speakers:m.speakers,tiles:m.tiles,
         calibrated:s.profile?.calibrated===true,profile:JSON.stringify(s.profile||{})
       });
@@ -78,10 +81,25 @@ chrome.runtime.onMessage.addListener((m,sender,reply)=>{
   }
 });
 
-chrome.tabs.onRemoved.addListener(tab=>{
-  const doc=documents.get(tab);
-  if(port&&doc)port.postMessage({type:'auto_end',tab,page_id:doc.page,client:doc.client});
+async function endDocument(tab,reason,page){
+  const stored=await chrome.storage.local.get('journalDoc:'+tab);
+  const doc=documents.get(tab)||stored['journalDoc:'+tab];
+  if(!doc||(page&&page!==doc.page))return;
+  connect().postMessage({type:'auto_end',tab,page_id:doc.page,client:doc.client,reason});
   documents.delete(tab);
+}
+chrome.tabs.onRemoved.addListener((tab,info)=>{
+  endDocument(tab,info?.isWindowClosing?'browser_window_closed':'tab_closed')
+    .catch(e=>publish({ok:false,tab,error:e.message}));
+});
+chrome.tabs.onUpdated.addListener((tab,change)=>{
+  if(!change.url)return;
+  (async()=>{
+    const stored=await chrome.storage.local.get('journalDoc:'+tab);
+    const doc=documents.get(tab)||stored['journalDoc:'+tab];
+    if(doc&&(!validUrl(change.url)||await meetingId(change.url)!==doc.meeting))
+      await endDocument(tab,'meeting_page_closed');
+  })().catch(e=>publish({ok:false,tab,error:e.message}));
 });
 
 async function attachOpenDionTabs(){

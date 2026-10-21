@@ -1,0 +1,10 @@
+{
+  "extension_id": "YOUR_EXTENSION_ID",
+  "extension_path": "C:/path/to/dion-speaker-helper/extension",
+  "runtime": "C:/path/to/external/runtime",
+  "python": "C:/path/to/external/python.exe",
+  "sessions": "C:/path/to/recordings",
+  "active_file": "C:/path/to/recorder/active.json",
+  "secretary_config": "C:/path/to/dion-secretary/config.json",
+  "node": "C:/path/to/node.exe"
+}

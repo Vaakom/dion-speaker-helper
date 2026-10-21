@@ -29,7 +29,7 @@ test('background reports disconnect without using status from another tab; closu
  runtime:{id:'test',onMessage:{addListener:f=>handler=f},onInstalled:{addListener:()=>{}},onStartup:{addListener:()=>{}},
  connectNative:()=>({onMessage:{addListener:f=>receive=f},onDisconnect:{addListener:f=>disconnect=f},postMessage:()=>{}})},
  storage:{local:{get:async keys=>Object.fromEntries((Array.isArray(keys)?keys:[keys]).map(k=>[k,store[k]])),set:async v=>Object.assign(store,v)}},
- tabs:{query:async()=>[{id:active,url:'https://dion.vc/test'}],onRemoved:{addListener:()=>{}}},
+ tabs:{query:async()=>[{id:active,url:'https://dion.vc/test'}],onRemoved:{addListener:()=>{}},onUpdated:{addListener:()=>{}}},
  scripting:{executeScript:async()=>{}}
  };
  vm.runInNewContext(fs.readFileSync(__dirname+'/extension/background.js','utf8'),{chrome,crypto:webcrypto,TextEncoder,URL,Map,Uint8Array,Date});

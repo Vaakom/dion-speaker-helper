@@ -22,3 +22,8 @@ Models/
 models/
 downloads/
 dist/
+
+*.local.md
+config.local.json
+auto_host_addon.txt
+*.sync-conflict-*

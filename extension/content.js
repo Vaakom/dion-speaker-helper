@@ -3,7 +3,7 @@
   globalThis.__dionAutoJournalLoaded=true;
   const pageId=crypto.randomUUID();
   const defaults={tile:'.e19i99td0',name:'[data-testid="name"]',active:'[data-testid="green-frame"] .e1iqp3xy0'};
-  let timer, profile = {}, enabled = false;
+  let timer, profile = {}, enabled = false, hadMeeting=false, missingSince=null;
   function visible(el) { return !!(el && el.getClientRects().length && getComputedStyle(el).visibility !== 'hidden'); }
   function inspect() {
     const p = profile;
@@ -25,7 +25,14 @@
   }
   async function tick() {
     if (!enabled) return;
-    try { await chrome.runtime.sendMessage({type:'sample', ...inspect(), page_id:pageId, at:Date.now()}); } catch {}
+    const sample=inspect();
+    if(sample.meeting===true){hadMeeting=true;missingSince=null;}
+    else if(sample.state==='no_tiles'&&hadMeeting){
+      if(missingSince===null)missingSince=Date.now();
+      if(Date.now()-missingSince<8000)return;
+      sample.end_reason='meeting_ended';
+    }else{return;} // Missing selectors or a frozen page are not meeting-end evidence.
+    try { await chrome.runtime.sendMessage({type:'sample', ...sample, page_id:pageId, at:Date.now()}); } catch {}
   }
   async function configure() {
     const s = await chrome.storage.local.get(['profile','autoJournalEnabled']);
