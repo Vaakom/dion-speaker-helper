@@ -14,7 +14,7 @@ class InstallTests(unittest.TestCase):
 
     def test_dry_run_changes_nothing(self):
         with tempfile.TemporaryDirectory() as folder:
-            runtime = Path(folder) / 'runtime'
+            runtime = Path(folder).resolve() / 'runtime'
             with patch.object(install, 'register_host') as register:
                 result = install.install(self.args(runtime, '--dry-run'))
             self.assertEqual(result['state'], 'dry_run')
@@ -23,9 +23,9 @@ class InstallTests(unittest.TestCase):
 
     def test_registration_and_legacy_journal_directory(self):
         with tempfile.TemporaryDirectory() as folder:
-            runtime = Path(folder) / 'runtime'
-            data = Path(folder) / 'data'
-            recorder = Path(folder) / 'recorder.json'
+            runtime = Path(folder).resolve() / 'runtime'
+            data = Path(folder).resolve() / 'data'
+            recorder = Path(folder).resolve() / 'recorder.json'
             recorder.write_text(json.dumps({'keep': 'unchanged'}), 'utf-8')
             with patch.object(install, 'register_host') as register:
                 result = install.install(self.args(runtime, '--data-dir', str(data), '--secretary-config', str(recorder)))
