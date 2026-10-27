@@ -9,3 +9,11 @@ Keep runtime outside the source tree. Native configuration restricts the accepte
 The installed native host imports `lifecycle.py`; both files are deployed by the installer. No extra Node package is required for installation. Python and Chrome are existing prerequisites; Node.js is used only by the development test suite.
 
 After registration, reload the Chrome extension and inspect its popup during a requested Dion session. Do not start recording merely as an installation check. No successful synthetic test proves real browser observation, device capture or semantic accuracy.
+
+## Toolbar and recorder behavior
+
+The icon reports freshly saved speech observations, not audio capture. Reload the extension after updates. Profile verification is separate from voice identity.
+
+With Secretary 2.1+, bound meeting-window or whole-browser closure stops recording after saving audio. Tab-only closure, navigation and apparent meeting end are advisory; missing journals do not block capture. Without a confirmed journal binding only whole-browser closure is observable reliably.
+
+Optional installed-host verification compares the actual extension ID with host configuration and asserts that tests did not modify installed files. Live UI, audio and notification behavior require separate validation.

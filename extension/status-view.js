@@ -11,6 +11,7 @@ function journalView(value, now=Date.now()) {
   if(s.state!=='auto_journaling'||age===null)return result;
   if(age>5)return {...result,label:'Журнал не обновляется',tone:'error',detail:'Нет новых событий более 5 секунд. Проверьте вкладку и локальный помощник.'};
   if(s.observation_state&&s.observation_state!=='observing')return {...result,label:'Участники не обнаружены',detail:'События сохраняются, но индикаторы участников недоступны.'};
+  if(value.profile_verified===false)return {...result,label:'Профиль имён не проверен',tone:'warning',detail:'Журнал обновляется, но настройки определения говорящего ещё не подтверждены. Проверьте имя во время речи в inspect.'};
   return {...result,label:'Журнал записывается',tone:'success',detail:s.speakers?.length?'Сейчас говорят: '+s.speakers.join(', '):'Сейчас никто не отмечен говорящим.'};
 }
 if(typeof module!=='undefined')module.exports={journalView};

@@ -22,3 +22,21 @@ test('Status updates do not restart polling; ambiguous names remain ambiguous',a
  changed({profile:{newValue:{}}},'local');
  await new Promise(setImmediate);assert.equal(polls,2);
 });
+
+test('default profile recognizes a speaking tile without a generated inner class',async()=>{
+ let last,inspect;
+ const name={getClientRects:()=>[{}],textContent:'Participant'};
+ const tile={getClientRects:()=>[{}],matches:s=>s==='[data-testid="green-frame"]',querySelectorAll:s=>s==='[data-testid="name"]'?[name]:[]};
+ const context={crypto:{randomUUID:()=> 'document-regression'},document:{querySelectorAll:()=>[tile]},getComputedStyle:()=>({visibility:'visible'}),Date,
+ setInterval:()=>1,clearInterval:()=>{},chrome:{storage:{local:{get:async()=>({})},onChanged:{addListener:()=>{}}},runtime:{sendMessage:async m=>last=m,onMessage:{addListener:f=>inspect=f}}}};
+ vm.runInNewContext(fs.readFileSync(path.join(__dirname,'extension/content.js'),'utf8'),context);
+ await new Promise(setImmediate);
+ assert.equal(last.speakers[0],'Participant');
+ assert.equal(last.named_tiles,1);assert.equal(last.active_tiles,1);
+ tile.matches=()=>false;
+ inspect({type:'inspect'},{},r=>last=r);
+ assert.equal(last.speakers.length,0);assert.equal(last.named_tiles,1);assert.equal(last.active_tiles,0);
+ tile.querySelectorAll=()=>[];
+ inspect({type:'inspect'},{},r=>last=r);
+ assert.equal(last.named_tiles,0);
+});

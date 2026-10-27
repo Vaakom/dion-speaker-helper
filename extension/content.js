@@ -2,7 +2,7 @@
   if(globalThis.__dionAutoJournalLoaded)return;
   globalThis.__dionAutoJournalLoaded=true;
   const pageId=crypto.randomUUID();
-  const defaults={tile:'.e19i99td0',name:'[data-testid="name"]',active:'[data-testid="green-frame"] .e1iqp3xy0'};
+  const defaults={tile:'.e19i99td0',name:'[data-testid="name"]',active:'[data-testid="green-frame"]'};
   let timer, profile = {}, enabled = false, hadMeeting=false, missingSince=null;
   function visible(el) { return !!(el && el.getClientRects().length && getComputedStyle(el).visibility !== 'hidden'); }
   function inspect() {
@@ -11,16 +11,19 @@
     try {
       const rawTiles = [...document.querySelectorAll(p.tile)];
       const tiles = rawTiles.filter(visible);
-      const speakers = [];
+      const speakers = []; let namedTiles=0, activeTiles=0, ambiguousTiles=0;
       for (const tile of tiles) {
         const names = [...tile.querySelectorAll(p.name)].filter(visible);
         const active = tile.matches(p.active) || [...tile.querySelectorAll(p.active)].some(visible);
+        if (names.length === 1) namedTiles++;
+        if (names.length > 1) ambiguousTiles++;
+        if (active) activeTiles++;
         if (active && names.length === 1) {
           const name = names[0].textContent.trim().replace(/\s+/g,' ');
           if (name && name.length <= 160) speakers.push(name);
         }
       }
-      return {state: tiles.length ? 'observing' : 'no_tiles', speakers, tiles:tiles.length, meeting:rawTiles.length>0};
+      return {state: tiles.length ? 'observing' : 'no_tiles', speakers, tiles:tiles.length, named_tiles:namedTiles, active_tiles:activeTiles, ambiguous_tiles:ambiguousTiles, meeting:rawTiles.length>0};
     } catch { return {state:'invalid_selectors', speakers:[], tiles:0}; }
   }
   async function tick() {

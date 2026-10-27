@@ -1,6 +1,6 @@
 # Dion Speaker Helper
 
-Chrome extension and local Native Messaging host for Dion speaker journals. The extension records no audio and performs no voice identification. Version 0.6.1 includes per-tab lifecycle signals for Dion Secretary's automatic recording stop.
+Chrome extension and local Native Messaging host for Dion speaker journals. The extension records no audio and performs no voice identification. Version 0.7.3 includes per-tab lifecycle signals for Dion Secretary's automatic recording stop.
 
 ## Install
 
@@ -37,3 +37,9 @@ Node.js must be on PATH, supplied with `--node`, or configured locally. Checks u
 The optional `test_recording_autostop.py` checks recorder integration with mocked audio; it needs the secretary source and NumPy. Set `DION_SECRETARY_SKILL` to that skill directory when it is not in the sibling vault layout. Real Dion exit detection still needs live validation after reloading an updated extension.
 
 See [INSTALL.md](INSTALL.md), [PRIVACY.md](PRIVACY.md), [CHANGELOG.md](CHANGELOG.md) and the MIT [license](LICENSE).
+
+## Toolbar status
+
+Green indicates a fresh speaking observation acknowledged as saved by the native host. Silence, stale acknowledgements, disabled journaling and disconnection return it to grey. This is journal status, not audio recording or verified voice identity. Reload the unpacked extension after updating its code.
+
+Secretary 2.1+ stops healthy audio on bound meeting-window closure or whole-browser closure; other lifecycle signals remain advisory. Missing journals do not block audio capture. Recording and processing remain explicit requests.

@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "Dion Speaker Helper",
-  "version": "0.6.1",
+  "version": "0.7.3",
   "description": "Локальный журнал имён говорящих для Dion Secretary. Требует проверки индикатора речи.",
   "permissions": [
     "storage",

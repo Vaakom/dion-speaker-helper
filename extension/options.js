@@ -1,6 +1,6 @@
 const ids=['tile','name','active'];
 const algorithm='browser_only_v1';
-const defaults={tile:'.e19i99td0',name:'[data-testid="name"]',active:'[data-testid="green-frame"] .e1iqp3xy0'};
+const defaults={tile:'.e19i99td0',name:'[data-testid="name"]',active:'[data-testid="green-frame"]'};
 chrome.storage.local.get('profile').then(({profile:p={}})=>{
   for(const id of ids)document.getElementById(id).value=p[id]||defaults[id];
   document.getElementById('calibrated').checked=!!p.calibrated;

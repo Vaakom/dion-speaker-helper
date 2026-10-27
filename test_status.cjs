@@ -61,3 +61,5 @@ test('popup refresh timer expires cached status and clipboard offers manual fall
  await elements.copy.onclick();assert.equal(copied,base.status.path);
  fail=true;await elements.copy.onclick();assert.ok(elements.path.selected);assert.match(elements['copy-result'].textContent,/Ctrl\+C/);
 });
+
+ test('unverified speaker settings are not reported healthy merely because journal is fresh',()=>assert.equal(journalView({...base,profile_verified:false},102000).tone,'warning'));
