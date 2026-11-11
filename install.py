@@ -12,7 +12,8 @@ SOURCE = Path(__file__).resolve().parent
 
 
 def local_settings():
-    path = SOURCE / 'config.local.json'
+    local = Path(os.environ.get('LOCALAPPDATA', str(Path.home() / '.local/share'))) / 'DionSpeakerHelper/config.json'
+    path = local if local.is_file() else SOURCE / 'config.local.json'
     return json.loads(path.read_text('utf-8-sig')) if path.exists() else {}
 
 

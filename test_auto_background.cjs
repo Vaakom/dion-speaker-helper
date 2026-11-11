@@ -26,14 +26,17 @@ test('Each DION tab starts independently without bind; reconnect resumes',async(
   assert.ok(frames.length>count,'Expected automatic native message');
   return frames.at(-1);
  }
- const a=await sample(1,'https://dion.vc/meeting/one?secret=hidden');
- const b=await sample(2,'https://dion.vc/meeting/two');
+ const a=await sample(1,'https://dion.vc/event/room%20one?secret=hidden');
+ const b=await sample(2,'https://dion.vc/event/two');
  assert.equal(a.type,'auto_sample');assert.equal(b.type,'auto_sample');
+ assert.equal(a.title,'room one');assert.equal(b.title,'two');
+ assert.equal(store['journalDoc:1'].meeting,a.meeting_id);
+ assert.equal(store['journalDoc:2'].meeting,b.meeting_id);
  assert.notEqual(a.meeting_id,b.meeting_id);assert.equal(a.client,b.client);
  assert.ok(!JSON.stringify(a).includes('hidden'));
  disconnect();
- const c=await sample(1,'https://dion.vc/meeting/one?secret=hidden');
+ const c=await sample(1,'https://dion.vc/event/room%20one?secret=hidden');
  assert.equal(connections,2);assert.equal(c.meeting_id,a.meeting_id);
- const end=await sample(1,'https://dion.vc/meeting/one',false);
+ const end=await sample(1,'https://dion.vc/event/room%20one',false);
  assert.equal(end.type,'auto_end');
 });

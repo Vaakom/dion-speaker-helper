@@ -23,7 +23,8 @@ def check_installed_identity(runtime, extension_id):
 
 
 def main():
-    config = ROOT / 'config.local.json'
+    local = Path(os.environ.get('LOCALAPPDATA', str(Path.home() / '.local/share'))) / 'DionSpeakerHelper/config.json'
+    config = local if local.is_file() else ROOT / 'config.local.json'
     settings = json.loads(config.read_text('utf-8-sig')) if config.exists() else {}
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--node', default=settings.get('node') or shutil.which('node'))

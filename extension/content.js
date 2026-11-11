@@ -3,8 +3,22 @@
   globalThis.__dionAutoJournalLoaded=true;
   const pageId=crypto.randomUUID();
   const defaults={tile:'.e19i99td0',name:'[data-testid="name"]',active:'[data-testid="green-frame"]'};
-  let timer, profile = {}, enabled = false, hadMeeting=false, missingSince=null;
+  let timer, profile = {}, enabled = false, hadMeeting=false;
+  let observedRoute=globalThis.location?.pathname||'';
   function visible(el) { return !!(el && el.getClientRects().length && getComputedStyle(el).visibility !== 'hidden'); }
+  function participantName(el) {
+    const name = el.textContent.trim().replace(/\s+/g,' ');
+    return name && name.length <= 160 ? name : null;
+  }
+  function sharingSpeakers() {
+    // Dion puts active microphones in the header. The broadcaster label in
+    // #screenshare identifies the owner of the video, even during silence.
+    const buttons = new Set();
+    for (const icon of document.querySelectorAll('header [data-testid="header-notification"] button svg[data-testid="MicroActiveIconIcon"]')) {
+      if (visible(icon)) buttons.add(icon.closest('button'));
+    }
+    return [...buttons].filter(visible).map(participantName).filter(Boolean);
+  }
   function inspect() {
     const p = profile;
     if (!p.tile || !p.name || !p.active) return {state:'unconfigured', speakers:[], tiles:0};
@@ -19,22 +33,24 @@
         if (names.length > 1) ambiguousTiles++;
         if (active) activeTiles++;
         if (active && names.length === 1) {
-          const name = names[0].textContent.trim().replace(/\s+/g,' ');
-          if (name && name.length <= 160) speakers.push(name);
+          const name = participantName(names[0]);
+          if (name) speakers.push(name);
         }
       }
-      return {state: tiles.length ? 'observing' : 'no_tiles', speakers, tiles:tiles.length, named_tiles:namedTiles, active_tiles:activeTiles, ambiguous_tiles:ambiguousTiles, meeting:rawTiles.length>0};
+      const sharing = [...document.querySelectorAll('#screenshare')].some(visible);
+      if (sharing && !activeTiles) speakers.push(...sharingSpeakers());
+      const meeting = tiles.length>0 || sharing;
+      return {state: meeting ? 'observing' : 'no_tiles', speakers, tiles:tiles.length, named_tiles:namedTiles, active_tiles:activeTiles, ambiguous_tiles:ambiguousTiles, meeting};
     } catch { return {state:'invalid_selectors', speakers:[], tiles:0}; }
   }
   async function tick() {
     if (!enabled) return;
+    const route=globalThis.location?.pathname||'';
+    if(route!==observedRoute){observedRoute=route;hadMeeting=false;}
     const sample=inspect();
-    if(sample.meeting===true){hadMeeting=true;missingSince=null;}
-    else if(sample.state==='no_tiles'&&hadMeeting){
-      if(missingSince===null)missingSince=Date.now();
-      if(Date.now()-missingSince<8000)return;
-      sample.end_reason='meeting_ended';
-    }else{return;} // Missing selectors or a frozen page are not meeting-end evidence.
+    if(sample.meeting===true)hadMeeting=true;
+    else if(hadMeeting)sample.meeting='uncertain';
+    else return;
     try { await chrome.runtime.sendMessage({type:'sample', ...sample, page_id:pageId, at:Date.now()}); } catch {}
   }
   async function configure() {

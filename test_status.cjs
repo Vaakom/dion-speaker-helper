@@ -23,18 +23,18 @@ test('disabled journal and failed status request are explicit',()=>{
 
 const vm=require('node:vm'),fs=require('node:fs'),{webcrypto}=require('node:crypto');
 test('background reports disconnect without using status from another tab; closure retains path',async()=>{
- let handler,receive,disconnect;let active=1;
+ let handler,receive,disconnect;let active=1,tabUrl='https://dion.vc/event/test';
  const store={'journalStatus:1':{ok:true,state:'auto_journaling',last_at:100,path:'C:/one/events.jsonl'}};
  const chrome={
  runtime:{id:'test',onMessage:{addListener:f=>handler=f},onInstalled:{addListener:()=>{}},onStartup:{addListener:()=>{}},
  connectNative:()=>({onMessage:{addListener:f=>receive=f},onDisconnect:{addListener:f=>disconnect=f},postMessage:()=>{}})},
  storage:{local:{get:async keys=>Object.fromEntries((Array.isArray(keys)?keys:[keys]).map(k=>[k,store[k]])),set:async v=>Object.assign(store,v)}},
- tabs:{query:async()=>[{id:active,url:'https://dion.vc/test'}],onRemoved:{addListener:()=>{}},onUpdated:{addListener:()=>{}}},
+ tabs:{query:async()=>[{id:active,url:tabUrl}],onRemoved:{addListener:()=>{}},onUpdated:{addListener:()=>{}}},
  scripting:{executeScript:async()=>{}}
  };
  vm.runInNewContext(fs.readFileSync(__dirname+'/extension/background.js','utf8'),{chrome,crypto:webcrypto,TextEncoder,URL,Map,Uint8Array,Date});
  await new Promise(setImmediate);
- handler({type:'sample',page_id:'document-12345',meeting:true,at:Date.now(),state:'observing',speakers:[]},{url:'https://dion.vc/test',tab:{id:1}},()=>{});
+ handler({type:'sample',page_id:'document-12345',meeting:true,at:Date.now(),state:'observing',speakers:[]},{url:'https://dion.vc/event/test',tab:{id:1}},()=>{});
  for(let i=0;i<100&&!disconnect;i++)await new Promise(r=>setTimeout(r,5));
  assert.ok(disconnect);
  disconnect();
@@ -44,6 +44,8 @@ test('background reports disconnect without using status from another tab; closu
  active=1;
  await receive({ok:true,state:'meeting_closed',tab:1});
  const closed=await status();assert.equal(closed.status.state,'meeting_closed');assert.equal(closed.status.path,'C:/one/events.jsonl');
+ tabUrl='https://dion.vc/event/another-room';
+ assert.equal(Object.keys((await status()).status).length,0);
 });
 test('popup refresh timer expires cached status and clipboard offers manual fallback',async()=>{
  const elements={};let timer,now=102000,copied='',fail=false;

@@ -1,6 +1,6 @@
 # Dion Speaker Helper
 
-Chrome extension and local Native Messaging host for Dion speaker journals. The extension records no audio and performs no voice identification. Version 0.7.3 includes per-tab lifecycle signals for Dion Secretary's automatic recording stop.
+Chrome extension and local Native Messaging host for Dion speaker journals. The extension records no audio and performs no voice identification. Each active meeting's room name comes from its own `/event/<room>` URL, including when several meeting tabs are open.
 
 ## Install
 
@@ -18,11 +18,11 @@ For a maintained local installation, copy `config.example.json` to ignored `conf
 
 ## Journals and recording lifecycle
 
-Journal entries contain observed speaker indicators, timestamps and meeting identity hashes. Meeting URLs and invitation parameters are not retained in plaintext. Gaps caused by throttling, frozen tabs, sleep, disconnected native messaging or changed Dion selectors cannot be recovered later.
+Journal entries contain observed speaker indicators, timestamps, room names from the URL and meeting identity hashes. Full meeting URLs and invitation parameters are not retained in plaintext. A room URL alone does not start a journal: a participant tile or the shared screen must also be visible. When the shared screen is visible and no tile signals speech, the extension reads active microphone chips in the upper-right header. The broadcaster label on the shared screen is never a speaker signal. If all meeting indicators disappear, the existing journal stays open with empty speaker observations. Gaps caused by throttling, frozen tabs, sleep or disconnected native messaging cannot be recovered later.
 
 The popup shows selected-tab status and the last saved journal. Stale acknowledgements are not presented as a live connection. Observed names and indicators are not guaranteed ground truth.
 
-Version 0.6 adds durable per-tab lifecycle events for tab/window closure, navigation away and observed meeting exit. Meeting-end detection uses an eight-second participant-UI debounce and depends on Dion selectors; silence or a transient missing DOM alone is not proof of meeting end. The extension does not stop audio itself: the recorder consumes the lifecycle signal, preserves both audio tracks and records its stop reason. This is separate from transcription.
+Version 0.6 added durable per-tab lifecycle events for tab/window closure and navigation away. Missing participant tiles no longer signal meeting exit because screen sharing and full-screen viewing can hide them. If Dion returns to a waiting screen at the same URL, the extension may continue the journal with empty speaker observations until navigation or tab closure. The extension does not stop audio itself: the recorder consumes lifecycle signals, preserves both audio tracks and records its stop reason. This is separate from transcription.
 
 Configure [Dion Secretary](https://github.com/Vaakom/agent-skills/tree/main/dion-secretary) with `journal_root` matching this host's journals directory. Simultaneous meetings remain separate; ambiguous selection requires an explicit choice.
 
@@ -43,3 +43,5 @@ See [INSTALL.md](INSTALL.md), [PRIVACY.md](PRIVACY.md), [CHANGELOG.md](CHANGELOG
 Green indicates a fresh speaking observation acknowledged as saved by the native host. Silence, stale acknowledgements, disabled journaling and disconnection return it to grey. This is journal status, not audio recording or verified voice identity. Reload the unpacked extension after updating its code.
 
 Secretary 2.1+ stops healthy audio on bound meeting-window closure or whole-browser closure; other lifecycle signals remain advisory. Missing journals do not block audio capture. Recording and processing remain explicit requests.
+
+Machine-local Dion settings: `%LOCALAPPDATA%/DionSecretary/config.json` and `%LOCALAPPDATA%/DionSpeakerHelper/config.json`. The helper runtime and new journals are under `%LOCALAPPDATA%/DionSpeakerHelper/runtime`. Legacy local config is a fallback only.

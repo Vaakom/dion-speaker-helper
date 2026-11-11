@@ -21,7 +21,7 @@ function background(store={}){
 async function waitFor(f){for(let i=0;i<100&&!f();i++)await new Promise(r=>setTimeout(r,5));assert.ok(f());}
 async function sample(b,tab=1){
  b.handlers.message({type:'sample',page_id:'document-12345',meeting:true,at:Date.now(),state:'observing',speakers:[],tiles:1},
-  {url:'https://dion.vc/meeting/one',tab:{id:tab,title:'DION'}},()=>{});
+  {url:'https://dion.vc/event/one',tab:{id:tab,title:'DION'}},()=>{});
  await waitFor(()=>b.frames.some(m=>m.tab===tab&&m.type==='auto_sample'));
 }
 test('Closed meeting tab sends reason even after service worker restart',async()=>{
@@ -30,6 +30,22 @@ test('Closed meeting tab sends reason even after service worker restart',async()
  await waitFor(()=>next.frames.length);
  assert.equal(next.frames[0].reason,'tab_closed');
  assert.equal(next.frames[0].page_id,'document-12345');
+});
+test('DION page without a room in its URL does not start a meeting',async()=>{
+ const b=background();
+ b.handlers.message({type:'sample',page_id:'document-12345',meeting:true,at:Date.now(),state:'observing',speakers:[],tiles:1},
+  {url:'https://dion.vc/',tab:{id:1,title:'DION | Conference'}},()=>{});
+ await new Promise(setImmediate);
+ assert.equal(b.frames.length,0);
+ assert.equal(b.store['journalDoc:1'],undefined);
+});
+test('Room URL before joining does not start a meeting',async()=>{
+ const b=background();
+ b.handlers.message({type:'sample',page_id:'document-12345',meeting:false,at:Date.now(),state:'no_tiles',speakers:[],tiles:0},
+  {url:'https://dion.vc/event/waiting-room',tab:{id:1,title:'DION | Conference'}},()=>{});
+ await new Promise(setImmediate);
+ assert.equal(b.frames.length,0);
+ assert.equal(b.store['journalDoc:1'],undefined);
 });
 test('Window closure and other tabs are isolated',async()=>{
  const b=background();await sample(b);
@@ -40,7 +56,7 @@ test('Window closure and other tabs are isolated',async()=>{
 });
 test('Only explicit meeting-end sample ends meeting; invalid selectors do not',async()=>{
  const b=background();await sample(b);
- const sender={url:'https://dion.vc/meeting/one',tab:{id:1,title:'DION'}};
+ const sender={url:'https://dion.vc/event/one',tab:{id:1,title:'DION'}};
  b.handlers.message({type:'sample',page_id:'document-12345',state:'invalid_selectors'},sender,()=>{});
  await new Promise(setImmediate);assert.equal(b.frames.length,1);
  b.handlers.message({type:'sample',page_id:'document-12345',meeting:false,end_reason:'meeting_ended'},sender,()=>{});
@@ -48,24 +64,42 @@ test('Only explicit meeting-end sample ends meeting; invalid selectors do not',a
 });
 test('Navigation away ends meeting; same URL reload does not',async()=>{
  const b=background();await sample(b);
- b.handlers.updated(1,{url:'https://dion.vc/meeting/one'});
+ b.handlers.updated(1,{url:'https://dion.vc/event/one'});
  await new Promise(r=>setTimeout(r,20));assert.equal(b.frames.length,1);
  b.handlers.updated(1,{url:'https://example.org/'});
  await waitFor(()=>b.frames.length===2);assert.equal(b.frames[1].reason,'meeting_page_closed');
 });
-test('Content requires eight seconds without meeting tiles and tolerates transient gaps',async()=>{
- let tick,last,now=0,tiles=true;
+test('Hidden participant tiles during screen sharing preserve the journal without speaker guesses',async()=>{
+ let tick,now=0,tiles=true;
+ const location={pathname:'/event/one'};
  const sent=[];
  const chrome={storage:{local:{get:async()=>({profile:{tile:'.tile',name:'.name',active:'.active'}})},onChanged:{addListener:()=>{}}},
  runtime:{sendMessage:async m=>sent.push(m),onMessage:{addListener:()=>{}}}};
  const tile={getClientRects:()=>[{}],matches:()=>false,querySelectorAll:()=>[]};
  vm.runInNewContext(fs.readFileSync(path.join(__dirname,'extension/content.js'),'utf8'),
- {crypto:{randomUUID:()=> 'document-12345'},document:{querySelectorAll:()=>tiles?[tile]:[]},
+ {crypto:{randomUUID:()=> 'document-12345'},location,document:{querySelectorAll:s=>tiles&&s==='.tile'?[tile]:[]},
   getComputedStyle:()=>({visibility:'visible'}),Date:{now:()=>now},setInterval:f=>(tick=f,1),clearInterval:()=>{},chrome});
  await new Promise(setImmediate);assert.equal(sent.length,1);
- tiles=false;now=1000;await tick();now=6000;await tick();assert.equal(sent.length,1);
+ tiles=false;now=1000;await tick();now=9000;await tick();
+ assert.equal(sent.at(-1).meeting,'uncertain');
+ assert.equal(sent.at(-1).state,'no_tiles');
+ assert.equal(sent.at(-1).speakers.length,0);
+ assert.equal(sent.at(-1).end_reason,undefined);
  tiles=true;await tick();assert.equal(sent.at(-1).meeting,true);
- tiles=false;now=7000;await tick();now=14999;await tick();assert.equal(sent.at(-1).meeting,true);
- now=15000;await tick();assert.equal(sent.at(-1).end_reason,'meeting_ended');
- assert.equal(sent.at(-1).meeting,false);
+ const count=sent.length;
+ tiles=false;location.pathname='/event/two';await tick();
+ assert.equal(sent.length,count);
+});
+test('Uncertain screen-share samples continue only their existing room journal',async()=>{
+ const b=background();await sample(b);
+ const sender={url:'https://dion.vc/event/one',tab:{id:1,title:'DION'}};
+ b.handlers.message({type:'sample',page_id:'document-12345',meeting:'uncertain',at:Date.now(),state:'no_tiles',speakers:[],tiles:0},sender,()=>{});
+ await waitFor(()=>b.frames.length===2);
+ assert.equal(b.frames[1].type,'auto_sample');
+ assert.equal(b.frames[1].state,'no_tiles');
+ assert.equal(b.frames[1].speakers.length,0);
+ sender.url='https://dion.vc/event/two';
+ b.handlers.message({type:'sample',page_id:'document-12345',meeting:'uncertain',at:Date.now(),state:'no_tiles',speakers:[],tiles:0},sender,()=>{});
+ await new Promise(setImmediate);
+ assert.equal(b.frames.length,2);
 });

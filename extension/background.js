@@ -76,6 +76,15 @@ chrome.storage.onChanged?.addListener((changes,area)=>{
 function validUrl(url){
   try{const u=new URL(url);return u.protocol==='https:'&&(u.hostname==='dion.vc'||u.hostname.endsWith('.dion.vc'));}catch{return false;}
 }
+function roomTitle(url) {
+  const u=new URL(url);
+  const match=u.pathname.match(/^\/event\/([^/]+)\/?$/i);
+  let slug='';
+  if(match){try{slug=decodeURIComponent(match[1]);}catch{slug=match[1];}}
+  slug=slug.trim();
+  if(slug)return slug.slice(0,160);
+  return null;
+}
 async function clientId(){
   if(!clientPromise)clientPromise=chrome.storage.local.get('journalClient').then(async s=>{
     if(s.journalClient)return s.journalClient;
@@ -124,17 +133,27 @@ chrome.runtime.onMessage.addListener((m,sender,reply)=>{
       const s=await chrome.storage.local.get(['profile','autoJournalEnabled']);
       if(s.autoJournalEnabled===false){clearSpeech(sender.tab.id);return;}
       if(m.state!=='observing'||!Array.isArray(m.speakers)||!m.speakers.length)clearSpeech(sender.tab.id);
-      if(m.meeting!==true){
+      if(m.meeting!==true&&m.meeting!=='uncertain'){
         if(m.meeting===false&&m.end_reason==='meeting_ended')
           await endDocument(sender.tab.id,'meeting_ended',m.page_id);
         return;
       }
-      const doc={page:m.page_id,client:await clientId(),meeting:await meetingId(sender.url)};
-      documents.set(sender.tab.id,doc);
-      await chrome.storage.local.set({['journalDoc:'+sender.tab.id]:doc});
+      const title=roomTitle(sender.url);
+      if(!title){await endDocument(sender.tab.id,'meeting_page_closed');return;}
+      const meeting=await meetingId(sender.url),docKey='journalDoc:'+sender.tab.id;
+      let doc;
+      if(m.meeting===true){
+        doc={page:m.page_id,client:await clientId(),meeting};
+        documents.set(sender.tab.id,doc);
+        await chrome.storage.local.set({[docKey]:doc});
+      }else{
+        const stored=await chrome.storage.local.get(docKey);
+        doc=documents.get(sender.tab.id)||stored[docKey];
+        if(!doc||doc.page!==m.page_id||doc.meeting!==meeting)return;
+      }
       connect().postMessage({
-        type:'auto_sample',tab:sender.tab.id,page_id:m.page_id,client:await clientId(),
-        lifecycle_version:1,meeting_id:doc.meeting,title:String(sender.tab.title||'DION').slice(0,160),
+        type:'auto_sample',tab:sender.tab.id,page_id:m.page_id,client:doc.client,
+        lifecycle_version:1,meeting_id:doc.meeting,title,
         at:m.at,state:m.state,speakers:m.speakers,tiles:m.tiles,
         calibrated:s.profile?.calibrated===true,profile:JSON.stringify(s.profile||{})
       });
@@ -153,10 +172,12 @@ chrome.runtime.onMessage.addListener((m,sender,reply)=>{
   }
   if(m.type==='status'){
     chrome.tabs.query({active:true,currentWindow:true}).then(async tabs=>{
-      const tab=tabs[0],key='journalStatus:'+tab?.id;
-      const s=await chrome.storage.local.get(['autoJournalEnabled',key,'nativeConnection','profile']);
-      reply({enabled:s.autoJournalEnabled!==false,isDion:validUrl(tab?.url),profile_verified:s.profile?.calibrated===true,
-        connection:s.nativeConnection,status:validUrl(tab?.url)?s[key]||{}:{}});
+      const tab=tabs[0],key='journalStatus:'+tab?.id,docKey='journalDoc:'+tab?.id;
+      const s=await chrome.storage.local.get(['autoJournalEnabled',key,docKey,'nativeConnection','profile']);
+      const hasRoomUrl=validUrl(tab?.url)&&roomTitle(tab.url)!==null;
+      const currentDoc=hasRoomUrl&&s[docKey]?.meeting===await meetingId(tab.url);
+      reply({enabled:s.autoJournalEnabled!==false,isDion:hasRoomUrl,profile_verified:s.profile?.calibrated===true,
+        connection:s.nativeConnection,status:currentDoc?s[key]||{}:{}});
     }).catch(e=>reply({error:e.message}));return true;
   }
 });
