@@ -2,6 +2,14 @@
 
 Chrome extension and local Native Messaging host for Dion speaker journals. The extension records no audio and performs no voice identification. Each active meeting's room name comes from its own `/event/<room>` URL, including when several meeting tabs are open.
 
+## Recent changes
+
+- [2026-11-11 — Improve Dion speaker journaling](https://github.com/Vaakom/dion-speaker-helper/commit/01977dc2a3c9fe0b1522d7f67ea7eb631a38b27f): use room URLs and screen-share microphone indicators for more reliable journals.
+- [2026-10-27 — Improve toolbar status and native host verification](https://github.com/Vaakom/dion-speaker-helper/commit/4cb43743acfcb94e247b71cb023d77e173d3b3da).
+- [2026-10-22 — Normalize Windows temporary paths in installer checks](https://github.com/Vaakom/dion-speaker-helper/commit/e100683166d21a98fe9193801ff83dfaed647a94).
+
+[Full commit history](https://github.com/Vaakom/dion-speaker-helper/commits/main/).
+
 ## Install
 
 Windows, Chrome and Python 3.12+ are required. Clone this repository into a permanent source folder. Load its `extension` folder through **Load unpacked** at `chrome://extensions`, then copy the ID shown by Chrome.
