@@ -4,6 +4,8 @@ async function show(){
   if(busy)return;busy=true;
   try{
     const value=await chrome.runtime.sendMessage({type:'status'});
+    const v=value?.versions||{};
+    byId('versions').textContent='Расширение: '+(v.extension||'неизвестно')+'; host: '+(v.host||'неизвестно')+'; протокол: '+(v.protocol??'неизвестно')+(v.compatible===false?' — несовместим':v.compatible===true?' — совместим':' — ещё не подтверждён');
     const view=journalView(value||{error:'Нет ответа расширения'});
     byId('status').textContent=view.label;byId('status').dataset.tone=view.tone;
     byId('detail').textContent=view.detail;

@@ -73,12 +73,17 @@ class LegacyJournal:
                 'speakers':names,'seconds':sample['seconds']}
 
 
+HOST_VERSION = '0.8.0'
+PROTOCOL_VERSION = 1
+
 class Journal(LegacyJournal):
     """Independent, deterministic journals for every observed DION document."""
     def __init__(self,config):
         super().__init__(config)
         self.streams={}
     def handle(self,msg):
+        if msg.get('type') == 'version_probe':
+            return {'ok': True, 'state': 'versions', 'host_version': HOST_VERSION, 'protocol_version': PROTOCOL_VERSION}
         if msg.get('type') not in ('auto_sample','auto_end'):
             return super().handle(msg)
         import hashlib,re,datetime as dt,math
@@ -126,7 +131,8 @@ class Journal(LegacyJournal):
             meta={'schema':1,'client':client,'tab':tab,'page_id':page,'meeting_id':meeting,
                   'title':title,'started_at':wall,'boot_epoch':wall-now}
         else:meta=json.loads(meta_path.read_text('utf-8'))
-        meta.update(last_at=wall,last_monotonic=now,title=title,
+        meta.update(versions={'extension': str(msg.get('extension_version', 'unknown'))[:40], 'host': HOST_VERSION, 'protocol': PROTOCOL_VERSION},
+                    last_at=wall,last_monotonic=now,title=title,
                     lifecycle_version=msg.get('lifecycle_version', 0))
         # Atomic metadata avoids partial reads by the secretary.
         temp=target/'meta.json.tmp'
@@ -140,7 +146,8 @@ class Journal(LegacyJournal):
         from lifecycle import active_lifecycle
         active_lifecycle(directory, msg)
         return {'ok':True,'state':'auto_journaling','tab':tab,'meeting_id':meeting[:12],
-                'title':title,'path':str(target),'speakers':names,'last_at':wall,'observation_state':sample_state}
+                'title':title,'path':str(target),'speakers':names,'last_at':wall,'observation_state':sample_state,
+                'host_version': HOST_VERSION, 'protocol_version': PROTOCOL_VERSION}
 
 def main():
     if os.name=='nt':

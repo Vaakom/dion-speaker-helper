@@ -1,5 +1,7 @@
 const HOST='local.dion_speaker_helper';
 let port, clientPromise;
+let hostVersions=null;
+const activeExtensionVersion=chrome.runtime.getManifest?.().version||'unknown';
 const documents=new Map();
 // Green means speech was actually saved by the native journal, not merely detected.
 const speakingTabs=new Map();
@@ -100,6 +102,7 @@ async function meetingId(url){
   return [...new Uint8Array(bytes)].map(x=>x.toString(16).padStart(2,'0')).join('');
 }
 async function publish(value){
+  if(value.host_version)hostVersions={host:value.host_version,protocol:value.protocol_version,at:Date.now()};
   if(value.ok===true&&value.state==='auto_journaling'&&Number.isInteger(value.tab)){
     const until=Number(value.last_at)*1000+5000;
     if(toolbarEnabled&&value.observation_state==='observing'&&Array.isArray(value.speakers)&&value.speakers.length&&until>Date.now())
@@ -122,7 +125,7 @@ function connect(){
   port.onMessage.addListener(publish);
   port.onDisconnect.addListener(()=>{
     const error=chrome.runtime.lastError?.message||'Связь с локальным журналом потеряна';
-    port=null;chrome.storage.local.set({nativeConnection:{connected:false,error,at:Date.now()}});publish({ok:false,error,retry:'При следующем наблюдении повторим подключение'});
+    hostVersions=null;port=null;chrome.storage.local.set({nativeConnection:{connected:false,error,at:Date.now()}});publish({ok:false,error,retry:'При следующем наблюдении повторим подключение'});
   });
   return port;
 }
@@ -153,7 +156,7 @@ chrome.runtime.onMessage.addListener((m,sender,reply)=>{
       }
       connect().postMessage({
         type:'auto_sample',tab:sender.tab.id,page_id:m.page_id,client:doc.client,
-        lifecycle_version:1,meeting_id:doc.meeting,title,
+        extension_version:activeExtensionVersion,lifecycle_version:1,meeting_id:doc.meeting,title,
         at:m.at,state:m.state,speakers:m.speakers,tiles:m.tiles,
         calibrated:s.profile?.calibrated===true,profile:JSON.stringify(s.profile||{})
       });
@@ -176,7 +179,8 @@ chrome.runtime.onMessage.addListener((m,sender,reply)=>{
       const s=await chrome.storage.local.get(['autoJournalEnabled',key,docKey,'nativeConnection','profile']);
       const hasRoomUrl=validUrl(tab?.url)&&roomTitle(tab.url)!==null;
       const currentDoc=hasRoomUrl&&s[docKey]?.meeting===await meetingId(tab.url);
-      reply({enabled:s.autoJournalEnabled!==false,isDion:hasRoomUrl,profile_verified:s.profile?.calibrated===true,
+      if(hostVersions&&Date.now()-hostVersions.at>5000)hostVersions=null;
+      reply({versions:{extension:activeExtensionVersion,host:hostVersions?.host||'unknown',protocol:hostVersions?.protocol??null,compatible:hostVersions?hostVersions.protocol===1:null},enabled:s.autoJournalEnabled!==false,isDion:hasRoomUrl,profile_verified:s.profile?.calibrated===true,
         connection:s.nativeConnection,status:currentDoc?s[key]||{}:{}});
     }).catch(e=>reply({error:e.message}));return true;
   }

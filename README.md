@@ -53,3 +53,7 @@ Green indicates a fresh speaking observation acknowledged as saved by the native
 Secretary 2.1+ stops healthy audio on bound meeting-window closure or whole-browser closure; other lifecycle signals remain advisory. Missing journals do not block audio capture. Recording and processing remain explicit requests.
 
 Machine-local Dion settings: `%LOCALAPPDATA%/DionSecretary/config.json` and `%LOCALAPPDATA%/DionSpeakerHelper/config.json`. The helper runtime and new journals are under `%LOCALAPPDATA%/DionSpeakerHelper/runtime`. Legacy local config is a fallback only.
+
+## Version evidence (0.8)
+
+Popup shows the executing extension version and host/protocol acknowledged during journal saves. Unknown means no current host acknowledgement; the installed manifest is not proof of execution. Secretary doctor compares configured manifest with fresh journal metadata and reports known reload mismatches. Update installed host through the normal installer and reload the extension to activate changed code; source edits alone do not deploy it.

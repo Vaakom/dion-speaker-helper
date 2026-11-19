@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.8.0 - 2026-11-19
+
+- Expose executing extension/host versions and protocol compatibility; persist observed versions in journal metadata. No extra permissions.
+
+
 ## 0.7.6 - 2026-11-08
 
 - During screen sharing, use the header's active microphone chips when no participant tile signals speech. Ignore the broadcaster label.

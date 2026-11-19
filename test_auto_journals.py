@@ -8,6 +8,16 @@ class AutoTests(unittest.TestCase):
   return {'type':'auto_sample','tab':tab,'client':'client-12345','page_id':'document-12345',
           'meeting_id':meeting,'title':'Тест DION','at':time.time()*1000,'state':'observing',
           'speakers':['Анна'],'profile':'{}','calibrated':True}
+ def test_versions_come_from_executing_host_and_sample(self):
+  with tempfile.TemporaryDirectory() as tmp:
+   j=Journal({'journals':tmp})
+   probe=j.handle({'type':'version_probe'})
+   self.assertEqual(probe['host_version'],'0.8.0')
+   self.assertEqual(probe['protocol_version'],1)
+   ack=j.handle({**self.message(),'extension_version':'0.8.0'})
+   meta=json.loads(Path(ack['path'],'meta.json').read_text('utf-8'))
+   self.assertEqual(meta['versions']['extension'],'0.8.0')
+   self.assertEqual(meta['versions']['host'],probe['host_version'])
  def test_creates_journals_without_recorder_and_isolates_tabs(self):
   with tempfile.TemporaryDirectory() as tmp:
    j=Journal({'journals':tmp})
